@@ -221,6 +221,11 @@ Rigidbody:
   m_CorrespondingSourceObject: {fileID: 6335976785169028956, guid: 6e39dee4bd8e0454da21fec1c2f65735, type: 3}
   m_PrefabInstance: {fileID: 4301925849270596877}
   m_PrefabAsset: {fileID: 0}
+--- !u!4 &1626850828 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6467846978097925862, guid: 6e39dee4bd8e0454da21fec1c2f65735, type: 3}
+  m_PrefabInstance: {fileID: 4301925849270596877}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1739147452
 GameObject:
   m_ObjectHideFlags: 0
@@ -345,6 +350,7 @@ GameObject:
   - component: {fileID: 2111200414}
   - component: {fileID: 2111200413}
   - component: {fileID: 2111200412}
+  - component: {fileID: 2111200415}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -426,6 +432,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2111200415
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2111200411}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b69468e9a6b1cd4792a576053354a6f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TPSRoguelite.InGame.Camera.CameraContllorer
+  target: {fileID: 1626850828}
 --- !u!1001 &4301925849270596877
 PrefabInstance:
   m_ObjectHideFlags: 0
