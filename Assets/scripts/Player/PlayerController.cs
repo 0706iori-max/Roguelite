@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+namespace TPSRoguilite.InGame.Player
+
 public class PlayerController : MonoBehaviour
 {
     /// <summary>
