@@ -1,4 +1,9 @@
 using Core.Interface;
+using Cysharp.Threading.Tasks;
+using InGame.Data;
+using System;
+using System.Threading;
+using InGame.Data;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -10,34 +15,60 @@ namespace TPSRoguelite.InGame.Player
         //移動速度
         private const float moveSpeed = 5.0f;
 
+        //回転速度
         private const float ROTATE_SPEED = 10f;
 
-        private const float LASER_MAX_DISTANCE = 50.0f;
+        //レーザーポインターの描画距離
+        private const float LASER_MAX_DISTANCE = 50f;
 
-        private const int ATTACK_DAMAGE = 20;
-        private const float ATTACK_RANGE = 50f;
-
-        
+        //攻撃距離(射撃範囲)
+        private const float ATACK_RANGE = 50;
 
         //物理演算コンポーネント
         [SerializeField] private Rigidbody rigidbody;
+
+        //銃口のトランスフォーム
+        [SerializeField] private Transform weponOrigin;
+
+        //レーザープリンターの描画コンポーネント
+        [SerializeField] private LineRenderer laserLineRenderer;
+
+        //武器のデータ
+        [SerializeField] private WeaponData CurrentWeapon;
+
+        //自動生成されたインプット
         private PlayerInputActions inputActions;
 
         private Vector2 moveInput;
 
         private Transform mainCameraTransform;
 
-        [SerializeField] private LineRenderer laserLineRenderer;
+        //リロードしているか
+        private bool isReloading;
 
-        [SerializeField] private Transform weaponOrigin;
+        //射撃可能か
+        private bool canShot = true;
+
+        //現在の弾数
+        public int CurrentAmmo { get; private set; }
 
         //外部(アニメーションとかUIとか)に現在の速度を伝えるために保存する
         public Vector3 CurrentVelocity { get; private set; }
 
         private void Awake()
         {
+            if (CurrentWeapon != null)
+            {
+                CurrentAmmo = CurrentWeapon.MaxAmmo;
+            }
+            else
+            {
+                Debug.LogError("WeaponDataがありません");
+            }
+
             inputActions = new PlayerInputActions();
             inputActions.Player.fire.performed += OnFire;
+            inputActions.Player.Reload.performed += OnReload;
 
             if (UnityEngine.Camera.main != null)
             {
@@ -57,34 +88,13 @@ namespace TPSRoguelite.InGame.Player
         {
             inputActions.Disable();
         }
-  private void DrawLaserPointer()
-     {
-         if (laserLineRenderer == null || weaponOrigin == null || mainCameraTransform == null)
-         {
-            return;
-         }
- 
-         laserLineRenderer.SetPosition(0, weaponOrigin.position);
 
-         // カメラの中央から真っ直ぐ前へ光線を飛ばす
-         Ray ray = new Ray(mainCameraTransform.position, mainCameraTransform.forward);
- 
-         // 光線が何かに当たったか判定
-         if (Physics.Raycast(ray, out RaycastHit hitInfo, LASER_MAX_DISTANCE))
-         {
-             laserLineRenderer.SetPosition(1, hitInfo.point);
-         }
-         else
-         {
-             // 何も当たらなかったら、最大距離の場所を終点にする    
-             laserLineRenderer.SetPosition(1, ray.GetPoint(LASER_MAX_DISTANCE));
-         }
-     }
 
         void Update()
         {
             moveInput = inputActions.Player.Move.ReadValue<Vector2>();
-     DrawLaserPointer();    }
+            DrawLaserPointer();
+        }
         private void FixedUpdate()
         {
             Move();
@@ -127,19 +137,122 @@ namespace TPSRoguelite.InGame.Player
             CurrentVelocity = rigidbody.linearVelocity;
         }
 
+
         private void OnFire(InputAction.CallbackContext context)
         {
-            Ray ray = new Ray(mainCameraTransform.position, mainCameraTransform.forward);
-            if(Physics.Raycast(ray,out RaycastHit hitInfo,ATTACK_RANGE)){
-                
-                Debug.Log($"(hitinfo.collider.GetConponent<IDamageble)");
-                IDamageble target = hitInfo.collider.GetComponent<IDamageble>();
-                if (target != null) {
-                    target.TakeDamage(ATTACK_DAMAGE);
+            if (context.performed)
+            {
 
+                if (!canShot || isReloading || CurrentWeapon == null) 
+                {
+                    return;
+                 }
+                switch (CurrentWeapon.WeaponFireType)
+                {
+                    case Enum.FireType.semiAuto:
+                        ShootSemAutoAsync(this.GetCancellationTokenOnDestroy()).Forget();
+                        break;
+                        
+                    case Enum.FireType.Burst:
+                        break;
+
+                    case Enum.FireType.FullAuto:
+                        break;
+
+                    default:
+
+                        Debug.LogWarning($"割り当てられてない射撃タイプがあります。{CurrentWeapon.WeaponFireType}");
+                        break;
+                }
+
+
+
+
+
+
+            } }
+        private async UniTaskVoid ShootSemAutoAsync(CancellationToken token)
+        {
+
+            if (CurrentAmmo == 0)
+            {
+                ReloadAsync().Forget();
+                return;
+            }
+            canShot = false;
+
+            CurrentAmmo--;
+            Debug.Log($"セミオートで撃った!弾数残り{CurrentAmmo}");
+            Shoot();
+
+            await UniTask.Delay(System.TimeSpan.FromSeconds(CurrentWeapon.FireRate), cancellationToken: token);
+
+            canShot = true;
+        }
+
+        //共通の攻撃処理
+        private void Shoot()
+        {
+            Ray ray = new Ray(mainCameraTransform.position, mainCameraTransform.forward);
+
+            //光線に何かが当たったか判定
+            if (Physics.Raycast(ray, out RaycastHit hitInfo, ATACK_RANGE))
+            {
+                Debug.Log($"{hitInfo.collider.name}に命中!");
+
+                //当たった相手がIDamageableを持っているか
+                IDamageble target = hitInfo.collider.GetComponent<IDamageble>();
+
+                
+                if (target != null)
+                {
+                    target.TakeDamage(CurrentWeapon.AttackPower);
                 }
             }
 
+        }
+
+        private void OnReload(InputAction.CallbackContext context)
+        {
+            if (isReloading || CurrentAmmo == CurrentWeapon.MaxAmmo)
+            {
+                return;
+            }
+            ReloadAsync().Forget();
+        }
+
+        private async UniTask ReloadAsync()
+        {
+            isReloading = true;
+            Debug.Log("リロード中");
+
+            await UniTask.Delay(TimeSpan.FromSeconds(CurrentWeapon.ReloadTime), cancellationToken: this.GetCancellationTokenOnDestroy());
+
+            CurrentAmmo = CurrentWeapon.MaxAmmo;
+            isReloading = false;
+            Debug.Log("リロード完了");
+        }
+
+
+        //レーザーポインターの描画
+        private void DrawLaserPointer()
+        {
+            if (laserLineRenderer == null || weponOrigin == null || mainCameraTransform == null)
+            {
+                return;
+            }
+
+            laserLineRenderer.SetPosition(0, weponOrigin.position);
+
+            Ray ray = new Ray(mainCameraTransform.position, mainCameraTransform.forward);
+            if (Physics.Raycast(ray, out RaycastHit hitinfo, LASER_MAX_DISTANCE))
+            {
+                laserLineRenderer.SetPosition(1, hitinfo.point);
+            }
+            else
+            {
+                laserLineRenderer.SetPosition(1, ray.GetPoint(LASER_MAX_DISTANCE));
+            }
         }
     }
 }

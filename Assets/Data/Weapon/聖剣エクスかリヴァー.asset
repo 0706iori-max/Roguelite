@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 477a173597cc2b9428da7c8afe408e4c, type: 3}
+  m_Name: "\u8056\u5263\u30A8\u30AF\u30B9\u304B\u30EA\u30F4\u30A1\u30FC"
+  m_EditorClassIdentifier: Assembly-CSharp::InGame.Data.WeaponData
+  <WeaponName>k__BackingField: 
+  <WeaponFireType>k__BackingField: 0
+  <AttackPower>k__BackingField: 310
+  <FireInterval>k__BackingField: 0
+  <FireRate>k__BackingField: 0
+  <MaxAmmo>k__BackingField: 2147483647
+  <ReloadTime>k__BackingField: 0
