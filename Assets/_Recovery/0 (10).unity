@@ -1660,10 +1660,6 @@ PrefabInstance:
       propertyPath: rigidbody
       value: 
       objectReference: {fileID: 1626850823}
-    - target: {fileID: -256675037082113656, guid: 6e39dee4bd8e0454da21fec1c2f65735, type: 3}
-      propertyPath: CurrentWeapon
-      value: 
-      objectReference: {fileID: 11400000, guid: fc1e5cf76d58b86418ffc06188babfe6, type: 2}
     - target: {fileID: 6335976785169028956, guid: 6e39dee4bd8e0454da21fec1c2f65735, type: 3}
       propertyPath: m_Constraints
       value: 112

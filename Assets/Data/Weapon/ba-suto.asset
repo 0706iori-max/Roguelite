@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 477a173597cc2b9428da7c8afe408e4c, type: 3}
-  m_Name: "\u8056\u5263\u30A8\u30AF\u30B9\u304B\u30EA\u30F4\u30A1\u30FC"
+  m_Name: ba-suto
   m_EditorClassIdentifier: Assembly-CSharp::InGame.Data.WeaponData
   <WeaponName>k__BackingField: 
-  <WeaponFireType>k__BackingField: 0
+  <WeaponFireType>k__BackingField: 1
   <AttackPower>k__BackingField: 310
-  <FireInterval>k__BackingField: 0
+  <FireInterval>k__BackingField: 0.1
   <FireRate>k__BackingField: 0
-  <MaxAmmo>k__BackingField: 15
+  <MaxAmmo>k__BackingField: 1000
   <ReloadTime>k__BackingField: 0

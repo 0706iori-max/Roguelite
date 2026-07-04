@@ -1,9 +1,10 @@
 using Core.Interface;
 using Cysharp.Threading.Tasks;
 using InGame.Data;
+using InGame.Data;
 using System;
 using System.Threading;
-using InGame.Data;
+using TPSRoguelite.InGame.Enum;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -49,6 +50,8 @@ namespace TPSRoguelite.InGame.Player
         //射撃可能か
         private bool canShot = true;
 
+        private CancellationTokenSource fireCts;
+
         //現在の弾数
         public int CurrentAmmo { get; private set; }
 
@@ -68,6 +71,7 @@ namespace TPSRoguelite.InGame.Player
 
             inputActions = new PlayerInputActions();
             inputActions.Player.fire.performed += OnFire;
+            inputActions.Player.fire.canceled += OnFire;
             inputActions.Player.Reload.performed += OnReload;
 
             if (UnityEngine.Camera.main != null)
@@ -147,19 +151,27 @@ namespace TPSRoguelite.InGame.Player
                 {
                     return;
                  }
+                // 押された瞬間に、新しいキャンセルスイッチを作成
+                fireCts = new CancellationTokenSource();
+                
+                               // プレイヤーが消滅した時と、ボタンを離した時のトークンを合体させる
+                var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(fireCts.Token, this.GetCancellationTokenOnDestroy());
                 switch (CurrentWeapon.WeaponFireType)
                 {
                     case Enum.FireType.semiAuto:
                         ShootSemAutoAsync(this.GetCancellationTokenOnDestroy()).Forget();
                         break;
-                        
+
                     case Enum.FireType.Burst:
+                        ShootBurstAsync(this.GetCancellationTokenOnDestroy()).Forget();
                         break;
 
                     case Enum.FireType.FullAuto:
-                        break;
-
-                    default:
+          
+                                              // フルオートは指を離した時に止めるため、合体させたトークンを渡す
+                       ShootFullAutoAsync(linkedCts.Token).Forget();
+                                              break;
+                                          default:
 
                         Debug.LogWarning($"割り当てられてない射撃タイプがあります。{CurrentWeapon.WeaponFireType}");
                         break;
@@ -170,7 +182,16 @@ namespace TPSRoguelite.InGame.Player
 
 
 
-            } }
+            }
+
+            // ボタンが離れたときに、フルオートのループを解除するために、キャンセルトークンのキャンセル処理を行う
+                       if (context.canceled)
+                       {
+            fireCts?.Cancel();
+            fireCts?.Dispose();
+            fireCts = null;
+                       }
+        }
         private async UniTaskVoid ShootSemAutoAsync(CancellationToken token)
         {
 
@@ -189,6 +210,57 @@ namespace TPSRoguelite.InGame.Player
 
             canShot = true;
         }
+              
+       private async UniTaskVoid ShootBurstAsync(CancellationToken token)
+       {
+           canShot= false;
+           for (int i = 0; i< 3; i++)
+           {
+               if (CurrentAmmo <= 0)
+               {
+                   canShot = true;
+                   return;
+               }
+
+               CurrentAmmo--;
+               Shoot();
+               Debug.Log($"バースト！ 残弾: {CurrentAmmo}");
+
+               await UniTask.Delay(TimeSpan.FromSeconds(CurrentWeapon.FireInterval), cancellationToken: token);
+           }
+
+await UniTask.Delay(TimeSpan.FromSeconds(CurrentWeapon.FireRate), cancellationToken: token);
+canShot = true;
+        }
+
+       private async UniTaskVoid ShootFullAutoAsync(CancellationToken token)
+       {
+           canShot = false;
+
+           while (!token.IsCancellationRequested)
+           {
+               if (CurrentAmmo <= 0)
+               {
+                   ReloadAsync().Forget();
+                   break;
+               }
+
+               CurrentAmmo--;
+               Debug.Log($"フルオート発射！ 残弾: {CurrentAmmo}");
+               Shoot();
+
+               bool isCanceled = await UniTask.Delay(TimeSpan.FromSeconds(CurrentWeapon.FireInterval), cancellationToken: token).SuppressCancellationThrow();
+
+               if (isCanceled)
+               {
+                   break;
+               }
+           }
+
+           await UniTask.Delay(TimeSpan.FromSeconds(CurrentWeapon.FireRate), cancellationToken: this.GetCancellationTokenOnDestroy());
+
+           canShot= true;
+       }
 
         //共通の攻撃処理
         private void Shoot()
